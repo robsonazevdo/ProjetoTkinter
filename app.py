@@ -34,8 +34,13 @@ def load_frame2(email,password):
                 dataR = data.get()
                 descricao= textArea.get("1.0",tk.END)
                 formaPagamento = comboBox.get()
-                print("id:",id,"valor Serviço:", v,"Desconto:",desconto, "Valor Total:",vt, "Data:",dataR, "Descrição:",descricao, formaPagamento)
-                #dados.criar_atendimento(id,v,desconto, vt, id_forma_pagamento, descricao, dataR)
+                if v == "" or vt == "" or dataR == "" or descricao == "" or formaPagamento == "":
+                    messagebox.showerror("ERRO!", "Precisa Selecionar um Cliente")
+                    
+                    #dados.criar_atendimento(id,v,desconto, vt, id_forma_pagamento, descricao, dataR)
+                else:
+                    print("id:",id,"valor Serviço:", v,"Desconto:",desconto, "Valor Total:",vt, "Data:",dataR, "Descrição:",descricao, formaPagamento)
+                    
             except:
                 messagebox.showerror("ERRO!", "Precisa Selecionar um Cliente")
                 
