@@ -53,10 +53,10 @@ def criar_agendamento(data1,hora, id_cliente, id_servico, id_funcionario):
     return False, novo_agendamento
 
 
-def criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao):
-    ja_existe = db_verificar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao)
+def criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data):
+    ja_existe = db_verificar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data)
     if ja_existe is not None: return True, ja_existe
-    novo_atendimento = db_criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao)
+    novo_atendimento = db_criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data)
     return False, novo_atendimento
 
 
@@ -325,9 +325,9 @@ def db_verificar_agendamento(data1, hora, id_cliente, id_servico, id_funcionario
         return row_to_dict(cur.description, cur.fetchone())
     
     
-def db_verificar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao):
+def db_verificar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("SELECT id_atendimento, id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao FROM atendimento WHERE id_cliente = ? AND descricao = ? AND valor_unitario = ? AND desconto = ? AND valor_total = ? AND id_forma_pagamento = ?", [id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao])
+        cur.execute("SELECT id_atendimento, id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data FROM atendimento WHERE id_cliente = ? AND descricao = ? AND valor_unitario = ? AND desconto = ? AND valor_total = ? AND id_forma_pagamento = ? AND data =?", [id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data])
         return row_to_dict(cur.description, cur.fetchone())
 
 
@@ -403,12 +403,12 @@ def db_criar_agendamento(data1,hora, id_cliente, id_servico, id_funcionario):
         return {'id_agendamento':id_agendamento, 'data1':data1, 'hora':hora, 'id_cliente':id_cliente, 'id_servico':id_servico, 'id_funcionario':id_funcionario}
 
 
-def db_criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao):
+def db_criar_atendimento(id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("INSERT INTO atendimento (id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao) VALUES (?, ?, ?, ?, ?, ?)", [id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao])
+        cur.execute("INSERT INTO atendimento (id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data) VALUES (?, ?, ?, ?, ?, ?, ?)", [id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data])
         id_atendimento = cur.lastrowid
         con.commit()
-        return {'id_atendimento':id_atendimento, 'id_cliente':id_cliente, 'valor_unitario':valor_unitario, 'desconto':desconto, 'valor_total':valor_total, 'id_forma_pagamento':id_forma_pagamento, 'descricao': descricao}
+        return {'id_atendimento':id_atendimento, 'id_cliente':id_cliente, 'valor_unitario':valor_unitario, 'desconto':desconto, 'valor_total':valor_total, 'id_forma_pagamento':id_forma_pagamento, 'descricao': descricao, 'data': data}
 
 
 def db_criar_servico(nome_servico, preco_servico, duracao_servico, status, id_cargo):
@@ -485,6 +485,12 @@ def db_historico_cliente(nome_cliente):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
         cur.execute("SELECT id_cliente, nome, telefone FROM cliente WHERE nome LIKE '%"+nome_cliente+"%' ORDER BY id_cliente")
         return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+def db_historico_atendimento(nome):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE c.nome LIKE '%"+nome+"%' ORDER BY a.data DESC")
+        return rows_to_dict(cur.description, cur.fetchall())
 
 def ver_comanda_fechar(id_comanda):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
@@ -513,7 +519,13 @@ def db_listar_funcionarios():
     with closing(conectar()) as con, closing(con.cursor()) as cur:
         cur.execute("SELECT id_funcionario, id_cargo, nome, cpf, email, endereco, telefone FROM funcionario")
         return rows_to_dict(cur.description, cur.fetchall())
-
+    
+def db_listar_atendimento():
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento ORDER BY a.data DESC")
+        return rows_to_dict(cur.description, cur.fetchall())
+ 
+ 
 
 def db_listar_agendamentos():
     with closing(conectar()) as con, closing(con.cursor()) as cur:
@@ -596,11 +608,21 @@ def db_editar_agendamento(id_agendamento, data1, hora, id_cliente, id_servico, i
         cur.execute("UPDATE agendamento SET data1 = ?, hora = ?, id_cliente = ?, id_servico = ?, id_funcionario = ? WHERE id_agendamento = ?", [data1, hora, id_cliente, id_servico, id_funcionario, id_agendamento])
         con.commit()
         return {'id_agendamento':id_agendamento, 'data1': data1, 'hora': hora, 'id_cliente': id_cliente, 'id_servico': id_servico, 'id_funcionario': id_funcionario}
+    
+    
+    
+def db_editar_atendimento(id_atendimento, id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao,data):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("UPDATE atendimento SET id_cliente = ? , valor_unitario = ?, desconto = ?, valor_total = ?, id_forma_pagamento = ?, descricao = ?, data = ? WHERE id_atendimento = ?", [id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data, id_atendimento])
+        con.commit()
+        return {'id_atendimento':id_atendimento, 'id_cliente':id_cliente, 'valor_unitario':valor_unitario, 'desconto':desconto, 'valor_total':valor_total, 'id_forma_pagamento':id_forma_pagamento, 'descricao': descricao, 'data': data}
+
+
 
 def db_editar_funcionario(id_funcionario, nome, email, endereco, cpf, telefone, id_cargo, status):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
         cur.execute("UPDATE funcionario SET id_cargo = ?, nome = ?, cpf = ?, email = ?, endereco = ?, telefone = ?, status = ? WHERE id_funcionario = ?", [id_cargo, nome, cpf, email, endereco, telefone, status, id_funcionario])
-        id_funcionario = cur.lastrowid
+        id_funcionario = cur.lastrowid 
         con.commit()
         return {'id_funcionario':id_funcionario, 'id_cargo':id_cargo, 'nome':nome, 'cpf':cpf, 'email':email, 'endereco':endereco, 'telefone':telefone, 'status':status}
 
