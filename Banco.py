@@ -489,7 +489,7 @@ def db_historico_cliente(nome_cliente):
     
 def db_historico_atendimento(nome):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("SELECT a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE c.nome LIKE '%"+nome+"%' ORDER BY a.data DESC")
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE c.nome LIKE '%"+nome+"%' ORDER BY a.data DESC")
         return rows_to_dict(cur.description, cur.fetchall())
 
 def ver_comanda_fechar(id_comanda):
@@ -582,6 +582,11 @@ def db_trazer_ultimo_id_servico():
 def db_deletar_agendamento(id_agendamento):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
         cur.execute("DELETE FROM agendamento WHERE id_agendamento = ?", [id_agendamento])
+        con.commit()
+        
+def db_deletar_atendimento(id_atendimento):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("DELETE FROM atendimento WHERE id_atendimento = ?", [id_atendimento])
         con.commit()
         
         
