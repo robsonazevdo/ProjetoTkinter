@@ -140,6 +140,8 @@ def load_frame2(email, password):
         
         
     def editarAtendimeto(d):
+        
+        
     
             def salvar():
                 msg = messagebox.askquestion("?","Deseja Alterar o Atendimento de {0}".format(d[2]) )
@@ -156,7 +158,11 @@ def load_frame2(email, password):
                     #dados.db_editar_atendimento(id_atendimento, id_cliente, valor_unitario, desconto, valor_total, id_forma_pagamento, descricao, data)
                     rootalter.destroy() 
                     pesquisarAtendimento()
-                            
+                    
+                    
+            def voltar():
+                pesquisarAtendimento()
+                rootalter.destroy()                
             
             def calc(e):
                 a = float(valor.get()) - float(desc.get())
@@ -264,14 +270,14 @@ def load_frame2(email, password):
             
             tk.Label(
                     quandro1,
-                    text="Desconto %",
+                    text="Desconto Reais",
                     bg="#b4918f",
                     fg="white",
                     font=('TkMenuFont', 9)
                     ).pack(side="left")
             
             text_desc = tk.DoubleVar()    
-            desc =tk.Entry(quandro1, width=6, textvariable=text_desc)
+            desc =tk.Entry(quandro1, width=6, textvariable=text_desc, validate="key", validatecommand=(vcmd,  "%P"))
             desc.pack(side="left",padx=10)
             desc.bind("<KeyRelease>", calc)
             text_desc.set(float(d[5]))
@@ -310,7 +316,7 @@ def load_frame2(email, password):
             
             tk.Button(
             quandro1,
-            text=("Inserir"),
+            text=("Salvar Altereção"),
             font=('TkMenuFont', 10),
             bg="#28393a",
             fg="white",
@@ -320,6 +326,19 @@ def load_frame2(email, password):
             bd = 5, 
             
             command=lambda: salvar()).pack(side="left")
+            
+            tk.Button(
+            quandro1,
+            text=("Voltar"),
+            font=('TkMenuFont', 10),
+            bg="#28393a",
+            fg="white",
+            cursor="hand2",
+            activebackground="#badee2",
+            activeforeground="black",
+            bd = 5, 
+            
+            command=lambda: voltar()).pack(side="left")
             
             rootalter.transient(root)
             rootalter.focus_force()
@@ -341,7 +360,7 @@ def load_frame2(email, password):
                 editarAtendimeto(d)    
                 app.destroy()
             except:
-                messagebox.showerror("ERRO!", "Precisa Selecionar um Atendimento")
+                messagebox.showerror("ERRO!", "Escolha um Atendimento")
                 
         def buscarAtendimento():
             tv.delete(*tv.get_children())
@@ -371,26 +390,28 @@ def load_frame2(email, password):
         quadroGrid.pack(fill="both",expand="yes", padx=10,pady=10)
         
         tv = ttk.Treeview(quadroGrid, columns=("id","Data","Nome","Valor", "Descricao", "Desconto","Valor_Pago", "forma"), show="headings",)
-        tv.column("id",minwidth=15,width=50)
-        tv.column("Data",minwidth=15,width=60)
-        tv.column("Nome",minwidth=15,width=250)
-        tv.column("Valor",minwidth=15,width=100)
-        tv.column("Descricao",minwidth=0,width=250)
-        tv.column("Desconto",minwidth=0,width=100)
-        tv.column("Valor_Pago",minwidth=0,width=100)
-        tv.column("forma",minwidth=0,width=100)
-        tv.heading("id", text="ID")
-        tv.heading("Data", text="DATA")
-        tv.heading("Nome", text="NOME")
-        tv.heading("Valor", text="VALOR")
-        tv.heading("Descricao", text="DESCRIÇÃO")
-        tv.heading("Desconto", text="DESCONTO")
-        tv.heading("Valor_Pago", text="VALOR PAGO")
-        tv.heading("forma", text="FORMA DE PAGAMENTO")
+        
+        tv.column("id",minwidth=0,width=30, anchor=tk.W, )
+        tv.column("Data",minwidth=15,width=70, anchor=tk.W)
+        tv.column("Nome",minwidth=15,width=150, anchor=tk.W)
+        tv.column("Valor",minwidth=15,width=60, anchor=tk.W)
+        tv.column("Descricao",minwidth=0,width=400, anchor=tk.W)
+        tv.column("Desconto",minwidth=0,width=70, anchor=tk.W)
+        tv.column("Valor_Pago",minwidth=0,width=100, anchor=tk.W)
+        tv.column("forma",minwidth=0,width=100, anchor=tk.W)
+        tv.heading("id", text="ID", anchor=tk.W)
+        tv.heading("Data", text="DATA", anchor=tk.W)
+        tv.heading("Nome", text="NOME", anchor=tk.W)
+        tv.heading("Valor", text="VALOR", anchor=tk.W)
+        tv.heading("Descricao", text="DESCRIÇÃO", anchor=tk.W)
+        tv.heading("Desconto", text="DESCONTO", anchor=tk.W)
+        tv.heading("Valor_Pago", text="VALOR PAGO", anchor=tk.W)
+        tv.heading("forma", text="FORMA DE PAG.", anchor=tk.W)
         tv.pack()
         popular()
-         
-              
+        
+        
+        
         
         
         quandro2 = tk.LabelFrame(app, text = "Pesquisar Clientes",  background="#b4918f", fg="white", bd=5, font=('TkMenuFont', 12))
@@ -431,7 +452,7 @@ def load_frame2(email, password):
         
         tk.Button(
         quandro2,
-        text=("Alterar Atendimento "),
+        text=("Ver Detalhes"),
         font=('TkMenuFont', 10),
         bg="#28393a",
         fg="white",
@@ -446,22 +467,29 @@ def load_frame2(email, password):
         app.grab_set()
         
     def novoAtendimento():  
-        def criar_atendimento():
+        options = []
+        formaPag = []
+        def criar_atendimento(comboBox):
             try :
+                descricoItem = ""
+                for j in options:
+                    descricoItem += "Quan. {},{}, V. unitario {}\n".format(j[0],j[1],j[2])
+                    
                 items = tv.selection()[0]
                 id = tv.item(items,"value")
                 desconto= desc.get()
-                v = valor.get()
+                v = float(desc.get()) + float(valorTotal.get())
                 vt = valorTotal.get()
                 dataR = data.get()
-                descricao= textArea.get("1.0",tk.END)
-                formaPagamento = comboBox.get()
+                descricao= descricoItem
+                formaPagamento = comboBox
                 if v == "" or vt == "" or dataR == "" or descricao == "" or formaPagamento == "":
                     messagebox.showerror("ERRO!", "Preencha todos os Campos")
-                    
+                   
                     
                 else:
                     msg = messagebox.askquestion("?","Deseja Finalizar o Atendimento?" )
+                    
                     if msg == "yes":
                         lista = dados.db_listar_forma_pagamento()
                         id_forma_pagamento = 0
@@ -470,10 +498,12 @@ def load_frame2(email, password):
                                 id_forma_pagamento = i["id_forma_pagamento"]
                         
                         dados.criar_atendimento(id[0],v,desconto, vt, id_forma_pagamento, descricao, dataR)
-                        
+                       
                         messagebox.showinfo(title=False, message="Atendimento Adicionado com sucesso")
                         app.after(500, app.destroy)
                         novoAtendimento()
+                        
+                        
             except:
                 messagebox.showerror("ERRO!", "Precisa Selecionar um Cliente")
                 
@@ -486,9 +516,15 @@ def load_frame2(email, password):
             for c in cliente:
                 tv.insert("","end", values=(c["id_cliente"],c['nome'],c['telefone']))
                 
-                
+        
+            
+                    
         def calc(e):
-            a = float(valor.get()) - float(desc.get())
+            soma = 0
+            for i in options:
+                soma += int(i[0]) * float(i[2])
+            a = soma - float(desc.get())
+            
             text_valor_total.set(a)
             
         def limitar_tamanho(P):
@@ -507,48 +543,213 @@ def load_frame2(email, password):
             for c in historico:
                 tv.insert("","end", values=(c["id_cliente"],c['nome'],c['telefone']))
                 
+        def formaPagamento():
+            
+            def adicionarForma():
+                listaF = [forma1.get(), comboBox.get()]
+                formaPag.append(listaF)
+               
+                     
+                tv.insert("","end", values=(1,forma1.get(), comboBox.get()))
+                
+                
+                
+            def calcForma(e):
+            
+                segundaF.set(float(valorTotal.get()) - float(forma1.get()))
+            
+            
+            app = tk.Toplevel()
+            app.title("Forma de Pagamento")
+            x = app.winfo_screenwidth() // 4
+            y = int(app.winfo_screenheight() * 0.1)
+            app.geometry('600x400+' + str(x) + '+' + str(y) )
+            app.configure(background="#b4918f")
+            
+            
+           
+            
+            tv = ttk.Treeview(app, columns=("id","valor","forma de pagamento"), show="headings",)
+            tv.column("id",minwidth=0,width=50, anchor=tk.CENTER)
+            tv.column("valor",minwidth=0,width=250, anchor=tk.CENTER)
+            tv.column("forma de pagamento",minwidth=0,width=100, anchor=tk.CENTER)
+            tv.heading("id", text="ID")
+            tv.heading("valor", text="VALOR")
+            tv.heading("forma de pagamento", text="FORMA DE PAGAMENTO")
+            tv.configure(height=4)
+            tv.pack(fill="both",expand="no", padx=2,pady=10,)
+            
+            
+            tk.Label(
+                app,
+                text="Valor Total",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 9)
+                ).pack(side="left")
+            segundaFo = tk.DoubleVar()
         
+            forma2 =tk.Entry(app, width=8, textvariable=segundaFo, validate="key", validatecommand=(vcmd,  "%P"))
+            forma2.pack(side="left",padx=10)
+            
+            #comboBox = ttk.Combobox(app, values=lista, width=10)
+            #comboBox.pack(side="left",padx=10)
+            segundaFo.set(valorTotal.get())
+            
+            
+            formaPagamneto = dados.db_listar_forma_pagamento()
+            lista = []
+            for f in formaPagamneto:
+                lista.append(f['nome'])
+                
+            tk.Label(
+                    app,
+                    text="Forma de Pagamento",
+                    bg="#b4918f",
+                    fg="white",
+                    font=('TkMenuFont', 9)
+                    ).pack(side="left")
+            
+            primeiraF = tk.DoubleVar()
         
+            forma1 =tk.Entry(app, width=8, textvariable=primeiraF, validate="key", validatecommand=(vcmd,  "%P"))
+            forma1.pack(side="left",padx=10)
+            forma1.bind("<KeyRelease>", calcForma)
+            
+           
+            
+            
+            segundaF = tk.DoubleVar()
+        
+            forma3 =tk.Entry(app, width=8, textvariable=segundaF, validate="key", validatecommand=(vcmd,  "%P"))
+            forma3.pack(side="left",padx=10)
+            
+            
+            
+            comboBox = ttk.Combobox(app, values=lista, width=10)
+            comboBox.pack(side="left",padx=10)
+            
+            tk.Button(
+            app,
+            text=("Adicionar"),
+            font=('TkMenuFont', 10),
+            bg="#28393a",
+            fg="white",
+            cursor="hand2",
+            activebackground="#badee2",
+            activeforeground="black",
+            bd = 5, 
+            
+            command=lambda: adicionarForma()).pack(side="left")
+            
+            tk.Button(
+            app,
+            text=("Finalizar"),
+            font=('TkMenuFont', 10),
+            bg="#28393a",
+            fg="white",
+            cursor="hand2",
+            activebackground="#badee2",
+            activeforeground="black",
+            bd = 5, 
+            
+            command=lambda: criar_atendimento(comboBox.get())).place(x=250, y=300)
+        
+            
+            
+            
+            app.transient(root)
+            app.focus_force()
+            app.grab_set()
+            forma2.focus()
+                
+        def adicionarServico():
+            if qta.get() == "" or textArea.get() == "" or valor.get() == "0.0":
+                messagebox.showinfo("ERRO", "Digite Todos os Dados")
+                return
+            items =[qta.get(),textArea.get(), valor.get()]
+            options.append(items)
+            total = int(qta.get()) * float(valor.get())
+            tv2.insert("","end", values=(qta.get(),textArea.get(), valor.get(), total))
+            colTotal()
+            qta.delete(0,tk.END)
+            textArea.delete(0,tk.END)
+            lb_valor.set(0.0)
+            qta.focus()
+            
+        def deletar():
+            try:
+                itemSelecionado = tv2.selection()[0]
+                valores = tv2.item(itemSelecionado, "value")
+                for i in range(len(options)):
+                    if options[i][1] == valores[1]:
+                        options.pop(i)
+                        
+                        colTotal()
+                tv2.delete(itemSelecionado)
+                
+            except:
+                messagebox.showinfo("ERRO","Selecione o item a ser deletado")
+                
+        def colTotal():
+            soma = 0
+            for i in options:
+                soma += int(i[0]) * float(i[2])
+            text_valor_total.set(soma)  
+            
+               
+                
+                  
+            
         app = tk.Toplevel()
         app.title("Novo Atendimento")
-        x = app.winfo_screenwidth() // 4
-        y = int(app.winfo_screenheight() * 0.1)
-        app.geometry('800x600+' + str(x) + '+' + str(y) )
+        x = app.winfo_screenwidth() // 8
+        y = int(app.winfo_screenheight() * 0.0)
+        app.geometry('1000x800+' + str(x) + '+' + str(y) )
         app.configure(background="#b4918f")
         
         vcmd = app.register(func=limitar_tamanho)
         
         quadroGrid = tk.LabelFrame(app, text="Clientes", background="#b4918f", fg="white", bd=5,font=('TkMenuFont', 12))
+        quadroGrid.configure(height=3)
         quadroGrid.pack(fill="both",expand="yes", padx=10,pady=10)
         
         tv = ttk.Treeview(quadroGrid, columns=("id","nome","fone"), show="headings",)
-        tv.column("id",minwidth=0,width=50)
-        tv.column("nome",minwidth=0,width=250)
-        tv.column("fone",minwidth=0,width=100)
+        tv.column("id",minwidth=0,width=50, anchor=tk.CENTER)
+        tv.column("nome",minwidth=0,width=250, anchor=tk.CENTER)
+        tv.column("fone",minwidth=0,width=100, anchor=tk.CENTER)
         tv.heading("id", text="ID")
         tv.heading("nome", text="NOME")
         tv.heading("fone", text="TELEFONE")
-        tv.pack()
+        tv.configure(height=1)
+        tv.pack(fill="both",expand="yes", padx=10,pady=10,)
         popular()
         
+        quadroGrid2 = tk.LabelFrame(app, text="Adicionar Atendimentos", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 12))
+        quadroGrid2.pack(fill="both",expand="yes", padx=10,pady=10)
+              
+        tv2 = ttk.Treeview(quadroGrid2, columns=("item","Descricao","Valor","Total"), show="headings",)
+        tv2.configure(height=2)
+        tv2.column("item",minwidth=0,width=80, anchor=tk.CENTER)
+        tv2.column("Descricao",minwidth=15,width=250,anchor=tk.CENTER)
+        tv2.column("Valor",minwidth=15,width=100,anchor=tk.CENTER)
+        tv2.column("Total",minwidth=15,width=100,anchor=tk.CENTER)
+        
+        
+        
+        tv2.heading("item", text="QUANTIDADE")
+        tv2.heading("Descricao", text="DESCRIÇÃO")
+        tv2.heading("Valor", text="VALOR")
+        tv2.heading("Total", text="TOTAL")
+        
+        tv2.pack(fill="both",expand="yes", padx=10,pady=10)
+        
         quadro = tk.LabelFrame(app, text = "Serviço Realizado", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 12))
+        quadro.configure(height=2)
         quadro.pack(fill="both", expand='yes',padx=10, pady=10)
         
         tk.Label(
-                quadro,
-                text="Descrição",
-                bg="#b4918f",
-                fg="white",
-                font=('TkMenuFont', 9)
-                ).pack(side="left", pady=10)
-        
-       
-        
-        textArea = tk.Text(quadro, width=40, height=2)
-        textArea.pack(side="left",padx=10)
-        
-        tk.Label(
-                quadro,
+                quadroGrid2,
                 text="Data Realizada",
                 bg="#b4918f",
                 fg="white",
@@ -556,17 +757,46 @@ def load_frame2(email, password):
                 ).pack(side="left", pady=10)
         
         lb_data = tk.StringVar()   
-        data = MaskedWidget(quadro,'fixed', mask='99/99/9999', width=10, textvariable=lb_data)
+        data = MaskedWidget(quadroGrid2,'fixed', mask='99/99/9999', width=10, textvariable=lb_data)
         data.pack(side="left",padx=10)
         
+       
         
-        quandro1 = tk.LabelFrame(app, text = "Inserir Dados da Venda", background="#b4918f", fg="white", bd=5, font=('TkMenuFont', 12))
-        quandro1.pack(fill="both", expand='yes',padx=10, pady=10)
+        tk.Label(
+                quadroGrid2,
+                text="Quantidade",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 9)
+                ).pack(side="left", pady=10)
+        
+       
+        
+        qta = tk.Entry(quadroGrid2)
+        qta.pack(side="left",padx=10)
+        
+        tk.Label(
+            quadroGrid2,
+            text="Descrição",
+            bg="#b4918f",
+            fg="white",
+            font=('TkMenuFont', 9)
+            ).pack(side="left", pady=10)
+    
+    
+    
+        textArea = tk.Entry(quadroGrid2)
+        textArea.pack(side="left",padx=10)
+        
+        
+        
+        #quandro1 = tk.LabelFrame(app, text = "Inserir Dados da Venda", background="#b4918f", fg="white", bd=5, font=('TkMenuFont', 12))
+        #quandro1.pack(fill="both", expand='yes',padx=10, pady=10)
        
         
 
         tk.Label(
-                quandro1,
+                quadroGrid2,
                 text="Valor",
                 bg="#b4918f",
                 fg="white",
@@ -574,55 +804,13 @@ def load_frame2(email, password):
                 ).pack(side="left", pady=10,padx=10)
         
         lb_valor = tk.DoubleVar()   
-        valor =tk.Entry(quandro1, width=8, textvariable=lb_valor, validate="key", validatecommand=(vcmd, "%P"))
+        valor =tk.Entry(quadroGrid2, width=8, textvariable=lb_valor, validate="key", validatecommand=(vcmd, "%P"))
         valor.pack(side="left",padx=10)
-         
         
-        tk.Label(
-                quandro1,
-                text="Desconto %",
-                bg="#b4918f",
-                fg="white",
-                font=('TkMenuFont', 9)
-                ).pack(side="left")
-        
-        text_desc = tk.DoubleVar()    
-        desc =tk.Entry(quandro1, width=6, textvariable=text_desc)
-        desc.pack(side="left",padx=10)
-        desc.bind("<KeyRelease>", calc)
-        tk.Label(
-                quandro1,
-                text="Valor Total",
-                bg="#b4918f",
-                fg="white",
-                font=('TkMenuFont', 9)
-                ).pack(side="left")
-        
-        text_valor_total = tk.DoubleVar()
-        
-        valorTotal =tk.Entry(quandro1, width=8, textvariable=text_valor_total, validate="key", validatecommand=(vcmd,  "%P"))
-        valorTotal.pack(side="left",padx=10)
-        
-        
-        formaPagamneto = dados.db_listar_forma_pagamento()
-        lista = []
-        for f in formaPagamneto:
-            lista.append(f['nome'])
-            
-        tk.Label(
-                quandro1,
-                text="Forma de Pagamento",
-                bg="#b4918f",
-                fg="white",
-                font=('TkMenuFont', 9)
-                ).pack(side="left")
-        
-        comboBox = ttk.Combobox(quandro1, values=lista, width=10)
-        comboBox.pack(side="left",padx=10)
         
         
         tk.Button(
-        quandro1,
+        quadroGrid2,
         text=("Inserir"),
         font=('TkMenuFont', 10),
         bg="#28393a",
@@ -632,11 +820,73 @@ def load_frame2(email, password):
         activeforeground="black",
         bd = 5, 
         
-        command=lambda: criar_atendimento()).pack(side="left")
+        command=lambda: adicionarServico()).pack(side="left") 
+        
+        tk.Button(
+        quadroGrid2,
+        text=("Deletar"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5, 
+        
+        command=lambda: deletar()).pack(side="left") 
+        
+       
+        
+        qta.focus()
+        
+        tk.Label(
+                quadro,
+                text="Desconto Reais",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 9)
+                ).pack(side="left")
+        
+        text_desc = tk.DoubleVar()    
+        desc =tk.Entry(quadro, width=6, textvariable=text_desc, validate="key", validatecommand=(vcmd,  "%P"))
+        desc.pack(side="left",padx=10)
+        desc.bind("<KeyRelease>", calc)
+        tk.Label(
+                quadro,
+                text="Valor Total",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 9)
+                ).pack(side="left")
+        
+        text_valor_total = tk.DoubleVar()
+        
+        valorTotal =tk.Entry(quadro, width=8, textvariable=text_valor_total, validate="key", validatecommand=(vcmd,  "%P"))
+        valorTotal.pack(side="left",padx=10)
+        
+        
+                      
+        
+        
+        
+        
+        tk.Button(
+        quadro,
+        text=("Finalizar"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5, 
+        
+        command=lambda: formaPagamento()).pack(side="left")
         
         
         
         quandro2 = tk.LabelFrame(app, text = "Pesquisar Clientes",  background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 12))
+        quandro2.configure(height=1)
         quandro2.pack(fill="both", expand='yes',padx=10, pady=10)
 
             
@@ -780,7 +1030,7 @@ def load_frame2(email, password):
             if nome_cliente.get() == "" or Telefone.get() == "":
                return messagebox.showinfo(title=False, message="Preencha todos os campos")
                 
-            ja_existe, c = dados.criar_cliente(nome_cliente.get(),Telefone.get())
+            ja_existe, c = dados.criar_cliente(nome_cliente.get().strip(" ").capitalize(),Telefone.get().strip(" "))
             if ja_existe != False:
                 nome_cliente.delete(0,tk.END)
                 Telefone.delete(0,tk.END)
@@ -788,8 +1038,8 @@ def load_frame2(email, password):
                 
             else:
                 messagebox.showinfo(title=False, message="Cadastro feito com sucesso")
-                app.quit
-                return
+                app.destroy()
+                
         
         #exec(open(pastaApp+"\\novoCliente.py").read())
         app = tk.Toplevel()
@@ -1078,7 +1328,7 @@ font=('TkMenuFont', 14)
 
 tk.Label(
     frame1,
-    text="Email",
+    text="Usuário",
     bg="#b4918f",
     fg="white",
     font=('TkMenuFont', 14),

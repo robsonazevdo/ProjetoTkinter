@@ -39,10 +39,10 @@ def autenticar_login():
 #### Definições de regras de negócio. ####
 ##########################################
 
-def criar_cliente(nome, senha): 
-    cliente_ja_existe = db_verificar_cliente(nome, senha)
+def criar_cliente(nome, telefone): 
+    cliente_ja_existe = db_verificar_cliente(nome, telefone)
     if cliente_ja_existe is not None: return True, cliente_ja_existe
-    novo_cliente = db_criar_cliente(nome, senha)
+    novo_cliente = db_criar_cliente(nome, telefone)
     return False, novo_cliente
 
 
@@ -160,7 +160,7 @@ sql_create = """
 CREATE TABLE IF NOT EXISTS cliente (
     id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
     nome VARCHAR(50) NOT NULL,
-    telefone VARCHAR(10) NOT NULL,
+    telefone VARCHAR(11) NOT NULL,
     UNIQUE(nome)
     
 );
@@ -281,11 +281,12 @@ CREATE TABLE IF NOT EXISTS comandaFechada (
 CREATE TABLE IF NOT EXISTS atendimento (
     id_atendimento INTEGER PRIMARY KEY,
     id_cliente INTEGER NOT NULL,
-    descricao VARCHAR(300) NOT NULL,
     valor_unitario REAL NOT NULL,
     desconto REAL NOT NULL,
     valor_total REAL NOT NULL,
     id_forma_pagamento INTERGER NOT NULL,
+    descricao VARCHAR(300) NOT NULL,
+    data DATETIME NOT NULL,
     FOREIGN KEY (id_forma_pagamento) REFERENCES forma_pagamento(id_forma_pagamento),
     FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente)
 
@@ -296,7 +297,9 @@ REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (2, 'Dinheiro');
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (3, 'Débito');
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (4, 'Crédito a vista');
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (5, 'Crédito Parcelado');
+REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (6, 'Pagamento Misto');
 
+REPLACE INTO tb_admin (nome, email, senha) VALUES ('Susana Alves Azevedo', 'susana.azevedo', '198385');
 
 """
 
