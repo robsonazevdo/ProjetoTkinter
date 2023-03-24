@@ -469,46 +469,8 @@ def load_frame2(email, password):
     def novoAtendimento():  
         options = []
         formaPag = []
-        def criar_atendimento(comboBox):
-            try :
-                descricoItem = ""
-                for j in options:
-                    descricoItem += "Quan. {},{}, V. unitario {}\n".format(j[0],j[1],j[2])
-                    
-                items = tv.selection()[0]
-                id = tv.item(items,"value")
-                desconto= desc.get()
-                v = float(desc.get()) + float(valorTotal.get())
-                vt = valorTotal.get()
-                dataR = data.get()
-                descricao= descricoItem
-                formaPagamento = comboBox
-                if v == "" or vt == "" or dataR == "" or descricao == "" or formaPagamento == "":
-                    messagebox.showerror("ERRO!", "Preencha todos os Campos")
-                   
-                    
-                else:
-                    msg = messagebox.askquestion("?","Deseja Finalizar o Atendimento?" )
-                    
-                    if msg == "yes":
-                        lista = dados.db_listar_forma_pagamento()
-                        id_forma_pagamento = 0
-                        for i in lista:
-                            if formaPagamento == i["nome"]:
-                                id_forma_pagamento = i["id_forma_pagamento"]
-                        
-                        dados.criar_atendimento(id[0],v,desconto, vt, id_forma_pagamento, descricao, dataR)
-                       
-                        messagebox.showinfo(title=False, message="Atendimento Adicionado com sucesso")
-                        app.after(500, app.destroy)
-                        novoAtendimento()
-                        
-                        
-            except:
-                messagebox.showerror("ERRO!", "Precisa Selecionar um Cliente")
-                
-                
         
+                        
         def popular():
             tv.delete(*tv.get_children())
             cliente = dados.db_listar_cliente()
@@ -516,8 +478,7 @@ def load_frame2(email, password):
             for c in cliente:
                 tv.insert("","end", values=(c["id_cliente"],c['nome'],c['telefone']))
                 
-        
-            
+                
                     
         def calc(e):
             soma = 0
@@ -543,45 +504,95 @@ def load_frame2(email, password):
             for c in historico:
                 tv.insert("","end", values=(c["id_cliente"],c['nome'],c['telefone']))
                 
+                
+        def criar_atendimento():
+            
+            try:    
+                descricoItem = ""
+                for j in options:
+                    descricoItem += "Quan. {},{}, V. unitario: {}\n".format(j[0],j[1],j[2])
+                for i in formaPag:
+                    descricoItem += "Valor-{}, Pagamento-{}\n".format(i[0],i[1])        
+                items = tv.selection()[0]
+                id = tv.item(items,"value")
+                desconto= desc.get()
+                v = float(desc.get()) + float(valorTotal.get())
+                vt = valorTotal.get()
+                dataR = data.get()
+                descricao= descricoItem
+                formaPagamento = formaPag
+                for f in dados.db_listar_forma_pagamento():
+                    if f["nome"] == formaPag[0][1]:
+                        formaPagamento = f["id_forma_pagamento"]
+                
+                if v == "" or vt == "" or dataR == "" or descricao == "" or formaPagamento == "":
+                    
+                    messagebox.showerror("ERRO!", "Preencha todos os Campos")
+                    
+                    
+                else:
+                    msg = messagebox.askquestion("?","Deseja Finalizar o Atendimento?" )
+                    
+                    if msg == "yes": 
+                                  
+                        dados.criar_atendimento(id[0],v,desconto, vt, formaPagamento, descricao, dataR)
+                        
+                        messagebox.showinfo(title=False, message="Atendimento Adicionado com sucesso")
+                        app.after(500, app.destroy)
+                        novoAtendimento()
+                        
+                        
+            except:
+                messagebox.showerror("ERRO!", "Precisa Selecionar um Cliente")
+                
+                
         def formaPagamento():
+            def fechar():
+                appp.destroy()
             
             def adicionarForma():
+                id = 0
                 listaF = [forma1.get(), comboBox.get()]
                 formaPag.append(listaF)
-               
+                formaPagmanemto = dados.db_listar_forma_pagamento()
+                for f in formaPagmanemto:
+                    if comboBox.get() == f["nome"]:
+                        id = f["id_forma_pagamento"]
                      
-                tv.insert("","end", values=(1,forma1.get(), comboBox.get()))
+                tvc.insert("","end", values=(id,forma1.get(), comboBox.get()))
+                segundaFo.set(forma3.get())
+                primeiraF.set("0.00")
                 
                 
                 
             def calcForma(e):
             
-                segundaF.set(float(valorTotal.get()) - float(forma1.get()))
+                segundaF.set(float(segundaFo.get()) - float(forma1.get()))
             
             
-            app = tk.Toplevel()
-            app.title("Forma de Pagamento")
-            x = app.winfo_screenwidth() // 4
-            y = int(app.winfo_screenheight() * 0.1)
-            app.geometry('600x400+' + str(x) + '+' + str(y) )
-            app.configure(background="#b4918f")
+            appp = tk.Toplevel()
+            appp.title("Forma de Pagamento")
+            x = appp.winfo_screenwidth() // 8
+            y = int(appp.winfo_screenheight() * 0.1)
+            appp.geometry('800x400+' + str(x) + '+' + str(y) )
+            appp.configure(background="#b4918f")
             
             
            
             
-            tv = ttk.Treeview(app, columns=("id","valor","forma de pagamento"), show="headings",)
-            tv.column("id",minwidth=0,width=50, anchor=tk.CENTER)
-            tv.column("valor",minwidth=0,width=250, anchor=tk.CENTER)
-            tv.column("forma de pagamento",minwidth=0,width=100, anchor=tk.CENTER)
-            tv.heading("id", text="ID")
-            tv.heading("valor", text="VALOR")
-            tv.heading("forma de pagamento", text="FORMA DE PAGAMENTO")
-            tv.configure(height=4)
-            tv.pack(fill="both",expand="no", padx=2,pady=10,)
+            tvc = ttk.Treeview(appp, columns=("id","valor","forma de pagamento"), show="headings",)
+            tvc.column("id",minwidth=0,width=50, anchor=tk.CENTER)
+            tvc.column("valor",minwidth=0,width=250, anchor=tk.CENTER)
+            tvc.column("forma de pagamento",minwidth=0,width=100, anchor=tk.CENTER)
+            tvc.heading("id", text="ID")
+            tvc.heading("valor", text="VALOR")
+            tvc.heading("forma de pagamento", text="FORMA DE PAGAMENTO")
+            tvc.configure(height=4)
+            tvc.pack(fill="both",expand="no", padx=2,pady=10,)
             
             
             tk.Label(
-                app,
+                appp,
                 text="Valor Total",
                 bg="#b4918f",
                 fg="white",
@@ -589,7 +600,7 @@ def load_frame2(email, password):
                 ).pack(side="left")
             segundaFo = tk.DoubleVar()
         
-            forma2 =tk.Entry(app, width=8, textvariable=segundaFo, validate="key", validatecommand=(vcmd,  "%P"))
+            forma2 =tk.Entry(appp, width=8, textvariable=segundaFo, validate="key", validatecommand=(vcmd,  "%P"))
             forma2.pack(side="left",padx=10)
             
             #comboBox = ttk.Combobox(app, values=lista, width=10)
@@ -603,8 +614,8 @@ def load_frame2(email, password):
                 lista.append(f['nome'])
                 
             tk.Label(
-                    app,
-                    text="Forma de Pagamento",
+                    appp,
+                    text="Valor Parcial",
                     bg="#b4918f",
                     fg="white",
                     font=('TkMenuFont', 9)
@@ -612,25 +623,38 @@ def load_frame2(email, password):
             
             primeiraF = tk.DoubleVar()
         
-            forma1 =tk.Entry(app, width=8, textvariable=primeiraF, validate="key", validatecommand=(vcmd,  "%P"))
+            forma1 =tk.Entry(appp, width=8, textvariable=primeiraF, validate="key", validatecommand=(vcmd,  "%P"))
             forma1.pack(side="left",padx=10)
             forma1.bind("<KeyRelease>", calcForma)
             
            
-            
+            tk.Label(
+                    appp,
+                    text="Valor Restante",
+                    bg="#b4918f",
+                    fg="white",
+                    font=('TkMenuFont', 9)
+                    ).pack(side="left")
             
             segundaF = tk.DoubleVar()
         
-            forma3 =tk.Entry(app, width=8, textvariable=segundaF, validate="key", validatecommand=(vcmd,  "%P"))
+            forma3 =tk.Entry(appp, width=8, textvariable=segundaF, validate="key", validatecommand=(vcmd,  "%P"))
             forma3.pack(side="left",padx=10)
             
+            tk.Label(
+                appp,
+                text="Forma de Pagamento",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 9)
+                ).pack(side="left")
             
             
-            comboBox = ttk.Combobox(app, values=lista, width=10)
+            comboBox = ttk.Combobox(appp, values=lista, width=10)
             comboBox.pack(side="left",padx=10)
             
             tk.Button(
-            app,
+            appp,
             text=("Adicionar"),
             font=('TkMenuFont', 10),
             bg="#28393a",
@@ -643,8 +667,8 @@ def load_frame2(email, password):
             command=lambda: adicionarForma()).pack(side="left")
             
             tk.Button(
-            app,
-            text=("Finalizar"),
+            appp,
+            text=("Finalizar "),
             font=('TkMenuFont', 10),
             bg="#28393a",
             fg="white",
@@ -653,15 +677,18 @@ def load_frame2(email, password):
             activeforeground="black",
             bd = 5, 
             
-            command=lambda: criar_atendimento(comboBox.get())).place(x=250, y=300)
+            command=lambda: fechar()).place(x=300, y=300)
         
             
             
             
-            app.transient(root)
-            app.focus_force()
-            app.grab_set()
+            appp.transient(root)
+            appp.focus_force()
+            appp.grab_set()
             forma2.focus()
+        
+               
+                
                 
         def adicionarServico():
             if qta.get() == "" or textArea.get() == "" or valor.get() == "0.0":
@@ -865,14 +892,11 @@ def load_frame2(email, password):
         valorTotal.pack(side="left",padx=10)
         
         
-                      
-        
-        
-        
+                
         
         tk.Button(
         quadro,
-        text=("Finalizar"),
+        text=("Adicionar Forma Pagamento"),
         font=('TkMenuFont', 10),
         bg="#28393a",
         fg="white",
@@ -883,6 +907,18 @@ def load_frame2(email, password):
         
         command=lambda: formaPagamento()).pack(side="left")
         
+        tk.Button(
+            quadro,
+            text=("Finalizar"),
+            font=('TkMenuFont', 10),
+            bg="#28393a",
+            fg="white",
+            cursor="hand2",
+            activebackground="#badee2",
+            activeforeground="black",
+            bd = 5, 
+            
+            command=lambda: criar_atendimento()).pack(side="left")
         
         
         quandro2 = tk.LabelFrame(app, text = "Pesquisar Clientes",  background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 12))
