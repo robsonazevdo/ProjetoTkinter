@@ -4,10 +4,11 @@ from PIL import ImageTk, Image
 from tkinter import ttk
 from tkinter import messagebox
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, date
 from maskedentry import*
-
-
+from tkcalendar import DateEntry
+from operator import neg
+import calendario
 
 
 
@@ -16,6 +17,35 @@ from maskedentry import*
         
  
 def load_frame2(email, password):
+    
+    
+    def agenda():
+        appp = tk.Toplevel()
+        appp.title("Forma de Pagamento")
+        x = appp.winfo_screenwidth() // 8
+        y = int(appp.winfo_screenheight() * 0.1)
+        appp.geometry('900x600+' + str(x) + '+' + str(y) )
+        appp.configure(background="#b4918f")
+        
+        s = dados.db_listar_saida2()
+        events = {}
+        for x in s:
+            events.setdefault(x['data'][:10], []).append(( x['descricao'] + ' ' + str(f"{x['valor_total']:.2f}"),'reminder'))
+       
+  
+        agenda = calendario.Agenda(appp, selectmode='day',locale='pt_br', date_pattern='dd/MM/yyyy',firstweekday="sunday")
+        
+        for k in events.keys():
+            date=datetime.strptime(k,"%Y-%m-%d").date()
+            for v in range(len(events[k])):
+                agenda.calevent_create(date, events[k][v][0], events[k][v][1])
+    
+    
+        
+
+        agenda.tag_config('reminder', background="#8B0000", foreground='white')
+        agenda.pack(fill="both", expand=True)
+         
     
     
             
@@ -140,9 +170,8 @@ def load_frame2(email, password):
         
         
     def editarAtendimeto(d):
-        
-        
-    
+
+
             def salvar():
                 msg = messagebox.askquestion("?","Deseja Alterar o Atendimento de {0}".format(d[2]) )
                 if msg == "yes":
@@ -248,7 +277,7 @@ def load_frame2(email, password):
             lb_data = tk.StringVar()   
             data = MaskedWidget(quadro,'fixed', mask='99/99/9999', width=10, textvariable=lb_data)
             data.pack(side="left",padx=10)
-            lb_data.set(d[1])
+            lb_data.set (d[1])
             
             quandro1 = tk.LabelFrame(rootalter, text = "Alterar Dados da Venda", background="#b4918f", foreground="white", bd=5, font=('TkMenuFont', 12))
             quandro1.pack(fill="both", expand='yes',padx=10, pady=10)
@@ -344,15 +373,11 @@ def load_frame2(email, password):
             rootalter.focus_force()
             rootalter.grab_set()
                 
-            
-                
+                     
         
     def pesquisarAtendimento():
         
-        
-            
-            
-              
+    
         def alterar():
             try:
                 items = tv.selection()[0]
@@ -466,7 +491,683 @@ def load_frame2(email, password):
         app.focus_force()
         app.grab_set()
         
+     
+    def saida():
+        
+        def editar_salvar():
+            try:
+                itemS = tvs.selection()[0]
+                valores = tvs.item(itemS,"value")
+                _data = "{}/{}/{}".format(valores[1][8:10],valores[1][5:7],valores[1][:4])
+                
+                app = tk.Toplevel()
+                app.title("Editar Saída")
+                x = app.winfo_screenwidth() // 10
+                y = int(app.winfo_screenheight() * 0.03)
+                app.geometry('800x400+' + str(x) + '+' + str(y) )
+                app.configure(background="#b4918f")
+                
+                
+                quandro3 = tk.LabelFrame(app, text = "Registrar Saída", background="#b4918f", fg="white", bd=5, font=('TkMenuFont', 12, 'bold'))
+                quandro3.pack()
+                
+                def validate_entry(text, P):
+                    if len(P) > 10:
+                        return False
+                    
+                    if (
+                    all(char in "0123456789." for char in text) and  # all characters are valid
+                    "-" not in text[1:] and # "-" is the first character or not present
+                    text.count(".") <= 1): # only 0 or 1 periods
+                        return True
+                    else:   
+                        return False
+                
+                
+                def alterar_saida():
+                    msg = messagebox.askquestion("?","Deseja Excluir o Atendimento do Cliente {0} do dia {1}".format(valores[2], valores[1]) )
+                    if msg == "yes":
+                        d = pNome.get()
+                        if d == "" or descricao.get() == "" or valor.get() == "" or obs.get() == "":
+                            return messagebox.showinfo(title=False, message="Preencha todos os campos")
+                            
+                        else:
+                            dados.db_atualizar_saida(valores[0],datetime.strptime(d, "%d/%m/%Y"),descricao.get(),valor.get(), obs.get())
+                            messagebox.showinfo(title=False, message="Cadastro feito com sucesso")       
+                            app.destroy()
+                        
+
+                dataLabel = tk.Label(
+                quandro3,
+                text="Data",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 10, 'bold'),
+                )
+                dataLabel.grid(row=0,column=0, sticky='w', padx=5, pady=(5))
+                
+                
+                pNome =DateEntry(quandro3, selectmode='day',locale='pt_br', date_pattern='dd/MM/yyyy')
+                pNome.grid(row=0,column=1, sticky='ew', padx=5, pady=(5))
+                
+                descricaoLabel = tk.Label(
+                quandro3,
+                text="Descrição",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 10, 'bold'),
+                )
+                
+                descricaoLabel.grid(row=1,column=0, sticky='w', padx=5, pady=(5))
+                    
+                descricao = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10))
+                descricao.grid(row=1,column=1, sticky='ew', padx=5, pady=(5), columnspan=2)
+                
+                
+                tk.Label(
+                quandro3,
+                text="Valor",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 10, 'bold'),
+                ).grid(row=2,column=0, sticky='w', padx=5, pady=(5))
+                
+                
+                vn = quandro3.register(validate_entry)
+                valor = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10), validate="key", validatecommand=(vn ,"%S","%P"))
+                valor.grid(row=2,column=1, sticky='ew', padx=5, pady=(5))
+                
+                
+                
+                tk.Label(
+                quandro3,
+                text="Observação",
+                bg="#b4918f",
+                fg="white",
+                font=('TkMenuFont', 10),
+                ).grid(row=3,column=0, sticky='w', padx=5, pady=(5))
+                    
+                obs = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10))
+                obs.grid(row=3,column=1, sticky='ew', padx=5, pady=(5), columnspan=2)
+                
+                
+                tk.Button(
+                quandro3,
+                text=("Registrar Saída"),
+                font=('TkMenuFont', 10),
+                bg="#28393a",
+                fg="white",
+                cursor="hand2",
+                activebackground="#badee2",
+                activeforeground="black",
+                bd = 5,
+                
+                command=lambda:  alterar_saida()).grid(row=4,column=1, sticky='w', padx=5, pady=(5))
+                
+                
+                pNome.set_date(_data) 
+                descricao.insert(0,valores[2])
+                valor.insert(0,valores[3])
+                obs.insert(0,valores[4])
+                    
+                app.transient(root)
+                app.focus_force()
+                app.grab_set() 
+                
+                    
+                
+            except:
+                messagebox.showerror("ERRO!", "Precisa Selecionar um item")
+            
+           
+            
+                
+               
+        
+        def popular():
+            tvs.delete(*tvs.get_children())
+            saida = dados.db_listar_saida2()
+            
+            
+            for s in saida:
+                tvs.insert("","end", values=(s['id_saida'],s["data"],s['descricao'],"%.2f" %s['valor_total'],s['observacao']))        
+
+        def pesquisaCliente():
+            tvs.delete(*tvs.get_children())
+            saida = dados.db_listar_saida(datetime.strptime(pNome.get(), "%d/%m/%Y"))
+            
+            for s in saida:
+                tvs.insert("","end", values=(s['id_saida'],s["data"],s['descricao'],"%.2f" %s['valor_total'],s['observacao']))
+                
+                
+        app = tk.Toplevel()
+        app.title("Fluxo de Caixa")
+        x = app.winfo_screenwidth() // 10
+        y = int(app.winfo_screenheight() * 0.03)
+        app.geometry('1000x690+' + str(x) + '+' + str(y) )
+        app.configure(background="#b4918f")
+        
+        
+        quandro3 = tk.LabelFrame(app, text = "Registrar Saída", background="#b4918f", fg="white", bd=5, height=1000, font=('TkMenuFont', 12, 'bold'))
+        quandro3.grid(row=0, column=0, rowspan=2, sticky='w', padx=25, pady=25 )
+         
+        def validate_entry(text, P):
+            if len(P) > 10:
+                return False
+            
+            if (
+            all(char in "0123456789." for char in text) and  # all characters are valid
+            "-" not in text[1:] and # "-" is the first character or not present
+            text.count(".") <= 1): # only 0 or 1 periods
+                return True
+            else:   
+                return False
+        
+        
+        def criar_saida():
+            d = pNome.get()
+            if d == "" or descricao.get() == "" or valor.get() == "" or obs.get() == "":
+                return messagebox.showinfo(title=False, message="Preencha todos os campos")
+                
+            else:
+                dados.db_criar_saida(datetime.strptime(d, "%d/%m/%Y"),descricao.get().strip(" "),valor.get().strip(" "), obs.get().strip(" "))
+                messagebox.showinfo(title=False, message="Cadastro feito com sucesso")       
+                descricao.delete(0,tk.END)
+                valor.delete(0,tk.END)
+                obs.delete(0,tk.END)
+                
+
+        dataLabel = tk.Label(
+        quandro3,
+        text="Data",
+        bg="#b4918f",
+        fg="white",
+        font=('TkMenuFont', 10, 'bold'),
+        )
+        dataLabel.grid(row=0,column=0, sticky='w', padx=5, pady=(5))
+        
+        
+        pNome =DateEntry(quandro3, selectmode='day',locale='pt_br', date_pattern='dd/MM/yyyy')
+        pNome.grid(row=0,column=1, sticky='ew', padx=5, pady=(5))
+        
+        descricaoLabel = tk.Label(
+        quandro3,
+        text="Descrição",
+        bg="#b4918f",
+        fg="white",
+        font=('TkMenuFont', 10, 'bold'),
+        )
+        
+        descricaoLabel.grid(row=1,column=0, sticky='w', padx=5, pady=(5))
+            
+        descricao = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10))
+        descricao.grid(row=1,column=1, sticky='ew', padx=5, pady=(5), columnspan=2)
+        
+        
+        tk.Label(
+        quandro3,
+        text="Valor",
+        bg="#b4918f",
+        fg="white",
+        font=('TkMenuFont', 10, 'bold'),
+        ).grid(row=2,column=0, sticky='w', padx=5, pady=(5))
+        
+        
+        vn = quandro3.register(validate_entry)
+        valor = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10), validate="key", validatecommand=(vn ,"%S","%P"))
+        valor.grid(row=2,column=1, sticky='ew', padx=5, pady=(5))
+        
+        
+        
+        tk.Label(
+        quandro3,
+        text="Observação",
+        bg="#b4918f",
+        fg="white",
+        font=('TkMenuFont', 10),
+        ).grid(row=3,column=0, sticky='w', padx=5, pady=(5))
+            
+        obs = tk.Entry(quandro3, width=10, font=('TkMenuFont', 10))
+        obs.grid(row=3,column=1, sticky='ew', padx=5, pady=(5), columnspan=2)
+        
+
+                   
+        tk.Button(
+        quandro3,
+        text=("Registrar Saída"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda:  criar_saida()).grid(row=4,column=1, sticky='w', padx=5, pady=(5))
+
+                
+        quadroGridSaida = tk.LabelFrame(app, text="Saídas", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 14))
+        quadroGridSaida.grid(row=0, column=1)
+        
+        tvs = ttk.Treeview(quadroGridSaida, columns=("id","Data","Nome","Valor_Pago", "forma"), show="headings",)
+        
+        tvs.column("id",minwidth=0,width=30, anchor=tk.W, )
+        tvs.column("Data",minwidth=15,width=70, anchor=tk.W)
+        tvs.column("Nome",minwidth=15,width=150, anchor=tk.W)
+       
+        tvs.column("Valor_Pago",minwidth=0,width=100, anchor=tk.W)
+        tvs.column("forma",minwidth=0,width=100, anchor=tk.W)
+        tvs.heading("id", text="ID", anchor=tk.W)
+        tvs.heading("Data", text="DATA", anchor=tk.W)
+        tvs.heading("Nome", text="DESCRIÇÃO", anchor=tk.W)
+       
+        tvs.heading("Valor_Pago", text="VALOR PAGO", anchor=tk.W)
+        tvs.heading("forma", text="OBSERVAÇÃO.", anchor=tk.W)
+        tvs.pack()
+        popular()
+        
+        
+        
+        
+        quandro2 = tk.LabelFrame(app, text = "Pesquisar Clientes",  background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 12))
+        quandro2.configure(height=1)
+        quandro2.grid(row=1, column=1, columnspan=2)
+
+            
+        pNome1 =tk.Entry(quandro2)
+        pNome1.bind('<Return>',(lambda event: pesquisaCliente()))
+        pNome1.pack(side="left",padx=10)
+        
+        tk.Button(
+        quandro2,
+        text=("Pesquisar"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: pesquisaCliente()).pack(side="left",padx=10)
+        
+        
+
+        tk.Button(
+        quandro2,
+        text=("Mostrar Todos"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: popular()).pack(side="left",padx=10)
+        
+        
+        tk.Button(
+        quandro2,
+        text=("Editar"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: editar_salvar()).pack(side="left",padx=10)
+        
+        app.transient(root)
+        app.focus_force()
+        app.grab_set() 
+      
+           
+        
+    def pesquisarEntrada():
+        
+        def switch_case(mes,y):
+            if mes == 1 or mes == 3 or mes == 5 or mes == 7 or mes == 8 or mes == 10 or mes == 12:
+                soma = dados.db_listar_saida_mes_ano((y, mes, 1), (y, mes, 31))
+                return float(soma[0]['tt']) * -1 if soma[0]['tt'] != None else f"{0:.2f}"
+            
+            elif mes == 2:
+                if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0):
+                    soma = dados.db_listar_saida_mes_ano((y, mes, 1), (y, mes, 29))
+                    return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+                else:
+                    soma = dados.db_listar_saida_mes_ano((y, mes, 1), (y, mes, 28))
+                    return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+                
+            else:
+                soma = dados.db_listar_saida_mes_ano((y, mes, 1), (y, mes, 30))
+                return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+            
+            
+        def switch_case_entrada(mes,y):
+            if mes == 1 or mes == 3 or mes == 5 or mes == 7 or mes == 8 or mes == 10 or mes == 12:
+                soma = dados.db_historico_entrada_saida((y, mes, 1), (y, mes, 31))
+                return float(soma[0]['tt']) if soma[0]['tt'] != None else f"{0:.2f}"
+            
+            elif mes == 2:
+                if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0):
+                    soma = dados.db_historico_entrada_saida((y, mes, 1), (y, mes, 29))
+                    return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+                else:
+                    soma = dados.db_historico_entrada_saida((y, mes, 1), (y, mes, 28))
+                    return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+                
+            else:
+                soma = dados.db_historico_entrada_saida((y, mes, 1), (y, mes, 30))
+                return f"{soma[0]['tt']:.2f}" if soma[0]['tt'] != None else f"{0:.2f}"
+        
+                
+        def buscarAtendimento2():
+            tv.delete(*tv.get_children())
+            tvs.delete(*tvs.get_children())
+            historico = dados.db_trazer_historico_atendimento(datetime.strptime(pNome.get(), "%d/%m/%Y"))
+            historicoConsulta = dados.db_historico_entrada(datetime.strptime(pNome.get(), "%d/%m/%Y"))
+            todosSaida = dados.db_listar_saida(datetime.strptime(pNome.get(), "%d/%m/%Y"))
+            somaSaida = dados.db_historico_saida(datetime.strptime(pNome.get(), "%d/%m/%Y"))
+            
+            
+            if somaSaida[0]['tt'] == None:
+                saida = f"{0:.2f}"
+            else:
+                saida = f"{somaSaida[0]['tt']:.2f}"
+                
+           
+            if historicoConsulta[0]['tt'] == None:
+                entrada = f"{0:.2f}"
+            else:
+                entrada = f"{historicoConsulta[0]['tt']:.2f}"
+
+            string_variable1.set(saida)
+            string_variable.set(entrada) 
+            
+            corLabel = f"{float(string_variable.get()) - float(string_variable1.get()):.2f}"
+            
+            if float(corLabel) < 0:
+                totalEntradas.configure(foreground="#800000")
+            else:
+                totalEntradas.configure(foreground="#00008B")
+            subtracao.set(corLabel)
+            
+                       
+            for s in todosSaida:
+                tvs.insert("","end", values=(s['id_saida'],s["data"],s['descricao'],"%.2f" %s['valor_total'],s['observacao'])) 
+              
+            for c in historico:
+                tv.insert("","end", values=(c['id_atendimento'],c["data"],c['nome'],"%.2f" %c['valor_total'],c['forma_pagamento']))
+
+            d = pNome.get().split("/")
+            res = [ele.lstrip('0') for ele in d] 
+            comboxMeses.current(int(res[1]))
+           
+            
+            corLabelMes = switch_case(int(res[1]), int(pNome.get()[6:]))
+            LabelEntradaMes = float(switch_case_entrada(int(res[1]), int(pNome.get()[6:])))
+        
+           
+            ts = float(corLabelMes)
+            somaMes.set(f"{ts:.2f}")
+            somaEntradasMes.set(f"{LabelEntradaMes:.2f}")
+            
+        def atualizar():
+            app.destroy()
+            pesquisarEntrada()
+            
+            
+        def popular():
+            tv.delete(*tv.get_children())
+            tvs.delete(*tvs.get_children())
+            saida = dados.db_listar_saida(pNome.get())
+            cliente = dados.cosultaEntrada(pNome.get())
+            t = dados.db_historico_entrada(pNome.get())
+            
+            for s in saida:
+                tvs.insert("","end", values=(s['id_saida'],s["data"],s['descricao'],"%.2f" %s['valor_total'],s['observacao']))        
+
+            for c in cliente:
+                tv.insert("","end", values=(c['id_atendimento'],c["data"],c['nome'],"%.2f" %c['valor_total'],c['forma_pagamento']))        
+
+            
+                
+        app = tk.Toplevel()
+        app.title("Fluxo de Caixa")
+        x = app.winfo_screenwidth() // 10
+        y = int(app.winfo_screenheight() * 0.03)
+        app.geometry('1000x690+' + str(x) + '+' + str(y) )
+        app.configure(background="#b4918f")
+        
+        
+        
+        quadroGrid = tk.LabelFrame(app, text="Entradas", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 14))
+        quadroGrid.grid(column=0, row=1, padx=15, pady=10)
+        
+        tv = ttk.Treeview(quadroGrid, columns=("id","Data","Nome","Valor_Pago", "forma"), show="headings",)
+        
+        tv.column("id",minwidth=0,width=30, anchor=tk.W, )
+        tv.column("Data",minwidth=15,width=70, anchor=tk.W)
+        tv.column("Nome",minwidth=15,width=150, anchor=tk.W)
+       
+        tv.column("Valor_Pago",minwidth=0,width=100, anchor=tk.W)
+        tv.column("forma",minwidth=0,width=100, anchor=tk.W)
+        tv.heading("id", text="ID", anchor=tk.W)
+        tv.heading("Data", text="DATA", anchor=tk.W)
+        tv.heading("Nome", text="NOME", anchor=tk.W)
+       
+        tv.heading("Valor_Pago", text="VALOR PAGO", anchor=tk.W)
+        tv.heading("forma", text="FORMA DE PAGAMENTO.", anchor=tk.W)
+        tv.pack()
+        #popular()
+        
+       
+        
+        
+        
+        quandro2 = tk.LabelFrame(app, text = "Buscar Data",  background="#b4918f", fg="white", bd=5, font=('TkMenuFont', 12, 'bold'))
+        quandro2.grid(column=0, row=0, ipady=15, columnspan=2)
+
+      
+            
+        pNome =DateEntry(quandro2, selectmode='day',locale='pt_br', date_pattern='dd/MM/yyyy')
+        pNome.bind('<Return>',(lambda event: buscarAtendimento2()))
+        pNome.pack(side="left",padx=10)
+        
+        tk.Button(
+        quandro2,
+        text=("Buscar "),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: buscarAtendimento2()).pack(side="left",padx=10)
+        
+        
+
+
+        tk.Button(
+        quandro2,
+        text=("Atualizar"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: atualizar()).pack(side="left",padx=10)
+        
+        
+        tk.Button(
+        quandro2,
+        text=("Registrar Saída"),
+        font=('TkMenuFont', 10),
+        bg="#28393a",
+        fg="white",
+        cursor="hand2",
+        activebackground="#badee2",
+        activeforeground="black",
+        bd = 5,
+        
+        command=lambda: saida()).pack(side="left",padx=10)
+        
+        
+        
+        
+        
+        
+        
+        quadroGridSaida = tk.LabelFrame(app, text="Saídas", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 14))
+        quadroGridSaida.grid(column=1, row=1, padx=20, pady=10)
+        
+        tvs = ttk.Treeview(quadroGridSaida, columns=("id","Data","Nome","Valor_Pago", "forma"), show="headings",)
+        
+        tvs.column("id",minwidth=0,width=30, anchor=tk.W, )
+        tvs.column("Data",minwidth=15,width=70, anchor=tk.W)
+        tvs.column("Nome",minwidth=15,width=150, anchor=tk.W)
+       
+        tvs.column("Valor_Pago",minwidth=0,width=100, anchor=tk.W)
+        tvs.column("forma",minwidth=0,width=100, anchor=tk.W)
+        tvs.heading("id", text="ID", anchor=tk.W)
+        tvs.heading("Data", text="DATA", anchor=tk.W)
+        tvs.heading("Nome", text="DESCRIÇÃO", anchor=tk.W)
+       
+        tvs.heading("Valor_Pago", text="VALOR PAGO", anchor=tk.W)
+        tvs.heading("forma", text="OBSERVAÇÃO.", anchor=tk.W)
+        tvs.pack()
+        popular()
+        
+        
+        labelEntradas = tk.Label(quadroGridSaida, text="Total de Saídas ", fg="#696969", background="#b4918f", font=('TkMenuFont', 12, 'bold'))
+        labelEntradas.pack(side="left", padx=10)
+        
+        
+        cliente3 = dados.db_historico_saida(pNome.get())
+        
+        if cliente3[0]['tt'] == None:
+            saida1 = f"{0:.2f}"
+            
+        else:
+            saida1 = f"{cliente3[0]['tt']:.2f}"
+        
+        string_variable1 = tk.StringVar() # Create the variable 
+        string_variable1.set(saida1)
+        
+        totalsaida = tk.Label(quadroGridSaida, textvariable=string_variable1, bd=5, background="#b4918f", fg="#ADD8E6", font=('TkMenuFont', 12, 'bold'))
+        totalsaida.pack(side="left")
+        
+
+        
+        cliente2 = dados.db_historico_entrada(pNome.get())
+    
+        if cliente2[0]['tt'] == None:
+            entrada = f"{0:.2f}"
+        else:
+            entrada = f"{cliente2[0]['tt']:.2f}"
+            
+            
+            
+        
+        labelEntrada = tk.Label(quadroGrid, text="Total de Entradas", fg="#696969", background="#b4918f", font=('TkMenuFont', 12, 'bold'))
+        labelEntrada.pack(side="left", padx=10)
+        
+        string_variable = tk.StringVar() # Create the variable 
+        string_variable.set(entrada) 
+        
+        totalEntrada = tk.Label(quadroGrid, textvariable=string_variable, bd=5, background="#b4918f", fg="#ADD8E6", font=('TkMenuFont', 12, 'bold'))
+        totalEntrada.pack(side="left")
+        
+    
+        
+        subtracao = tk.StringVar()
+        corLabel = f"{float(string_variable.get()) - float(string_variable1.get()):.2f}"
+        
+        if float(corLabel) < 0:
+            fgc = "#800000"
+        else:
+            fgc = "#00008B"
+        subtracao.set(corLabel)
+        
+        totalEntradasaida = tk.Label(app, text='Fluxo do dia', bd=5, background="#b4918f", fg="#ADD8E6", font=('TkMenuFont', 25, 'bold'))
+        totalEntradasaida.grid(column=1, row=2, padx=25, pady=1, sticky='w')
+        
+        totalEntradas = tk.Label(app, textvariable=subtracao, bd=5, background="#b4918f", fg=fgc, font=('TkMenuFont', 25, 'bold'))
+        totalEntradas.grid(column=1, row=2, padx=25, pady=1, sticky='e')
+        
+        meses = ('Selecione o Mês','Janeiro',  
+                          'Fevereiro', 
+                          'Março', 
+                          'Abril', 
+                          'Maio', 
+                          'Junho',  
+                          'Julho',  
+                          'Agosto',  
+                          'Setembro',  
+                          'Outubro',  
+                          'Novembro',  
+                          'Dezembro')
+        
+     
+        mes_do_Ano = datetime.today()
+        
+        quadroFluxo = tk.LabelFrame(app, text="Fluxo Total do Mês", background="#b4918f",fg="white", bd=5, font=('TkMenuFont', 14))
+        quadroFluxo.grid(column=0, row=3, padx=15, pady=1, sticky='ew')
+        
+        totalEntradasMes = tk.Label(quadroFluxo, text="Meses: ", bd=5, background="#b4918f", fg=fgc, font=('TkMenuFont', 12, 'bold'))
+        totalEntradasMes.grid(row = 0, column = 1)
+        
+        current_var = tk.StringVar()
+        k = current_var.get()
+        comboxMeses = ttk.Combobox(quadroFluxo,textvariable=k, state='readonly')
+        comboxMeses['values'] = meses
+        comboxMeses.current(mes_do_Ano.month)
+        comboxMeses.grid(column = 2, row = 0)
+        
+        
+         
+        somaMes = tk.StringVar()
+        corLabelMes = switch_case(mes_do_Ano.month, mes_do_Ano.year)
+        
+        
+        if float(corLabelMes) < 0:
+            fgcm = "#800000"
+        else:  
+            fgcm = "#00008B"
+        somaMes.set(f"{corLabelMes:.2f}")
+        
+        totalEntradasaida1 = tk.Label(quadroFluxo, text='Total de Saída Mês', bd=5, background="#b4918f", fg=fgcm, font=('TkMenuFont', 12, 'bold'))
+        totalEntradasaida1.grid(column=0, row=1, padx=2, pady=1, sticky='w')
+        
+        totalEntradas1 = tk.Label(quadroFluxo, textvariable=somaMes, bd=5, background="#b4918f", fg=fgcm, font=('TkMenuFont', 12, 'bold'))
+        totalEntradas1.grid(column=1, row=1, padx=2, pady=1, sticky='e') 
+        
+        
+        
+        somaEntradasMes = tk.StringVar()
+        somaEntradasMes.set(f"{switch_case_entrada(mes_do_Ano.month, mes_do_Ano.year):.2f}")
+        
+        totalEntradasaida2 = tk.Label(quadroFluxo, text='Total de Entradas Mês', bd=5, background="#b4918f", fg=fgcm, font=('TkMenuFont', 12, 'bold'))
+        totalEntradasaida2.grid(column=0, row=2, padx=2, pady=1, sticky='w')
+        
+        totalSaidas_ = tk.Label(quadroFluxo, textvariable=somaEntradasMes, bd=5, background="#b4918f", fg=fgcm, font=('TkMenuFont', 12, 'bold'))
+        totalSaidas_.grid(column=1, row=2, padx=2, pady=1, sticky='e') 
+
+        app.transient(root)
+        app.focus_force()
+        app.grab_set()
+        
+        
     def novoAtendimento():  
+        
         options = []
         formaPag = []
         
@@ -518,7 +1219,7 @@ def load_frame2(email, password):
                 desconto= desc.get()
                 v = float(desc.get()) + float(valorTotal.get())
                 vt = valorTotal.get()
-                dataR = data.get()
+                dataR = datetime.strptime(d, "%d/%m/%Y")
                 descricao= descricoItem
                 formaPagamento = formaPag
                 for f in dados.db_listar_forma_pagamento():
@@ -730,9 +1431,9 @@ def load_frame2(email, password):
             
         app = tk.Toplevel()
         app.title("Novo Atendimento")
-        x = app.winfo_screenwidth() // 8
-        y = int(app.winfo_screenheight() * 0.0)
-        app.geometry('1000x800+' + str(x) + '+' + str(y) )
+        x = app.winfo_screenwidth() // 10
+        y = int(app.winfo_screenheight() * 0.03)
+        app.geometry('1000x690+' + str(x) + '+' + str(y) )
         app.configure(background="#b4918f")
         
         vcmd = app.register(func=limitar_tamanho)
@@ -783,8 +1484,11 @@ def load_frame2(email, password):
                 font=('TkMenuFont', 9)
                 ).pack(side="left", pady=10)
         
-        lb_data = tk.StringVar()   
-        data = MaskedWidget(quadroGrid2,'fixed', mask='99/99/9999', width=10, textvariable=lb_data)
+        
+
+        
+        data = DateEntry(quadroGrid2, selectmode='day',locale='pt_br', date_pattern='dd/MM/yyyy')
+        
         data.pack(side="left",padx=10)
         
        
@@ -961,6 +1665,7 @@ def load_frame2(email, password):
         app.transient(root)
         app.focus_force()
         app.grab_set()
+            
             
     def deleteCliente():
         
@@ -1306,6 +2011,17 @@ def load_frame2(email, password):
         menuAtendimento.add_command(label="Deletar",command=deletarAtendimento)
        
         barraMenu.add_cascade(label="Atendimento ",menu=menuAtendimento)
+        
+        
+        relatorioMenu = tk.Menu(barraMenu, tearoff=0)
+        relatorioMenu.add_command(label="Entrada", command=pesquisarEntrada)
+        relatorioMenu.add_command(label="Fluxo De Caixa")
+        barraMenu.add_cascade(label="Fluxo de caixa", menu=relatorioMenu)
+        
+        
+        AgendaMenu = tk.Menu(barraMenu, tearoff=0)
+        AgendaMenu.add_command(label="Agendamento", command=agenda)
+        barraMenu.add_cascade(label="Agenda", menu=AgendaMenu)
 
 
         root.config(menu=barraMenu)
@@ -1335,7 +2051,7 @@ x = root.winfo_screenwidth() // 240
 
 y = int(root.winfo_screenheight() * 0.0)
 root.geometry('1360x728+' + str(x) + '+' + str(y) )
-
+root.attributes('-fullscreen',True)
 frame1 = tk.Frame(root, width=1360, height=728, bg="#b4918f")
 frame2 = tk.Frame(root, width=1360, height=728, bg="#b4918f")
 frame1.grid(row=0, column=0)

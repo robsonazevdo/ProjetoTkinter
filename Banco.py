@@ -2,6 +2,7 @@ from contextlib import closing
 import sqlite3
 import os
 import werkzeug 
+from datetime import date, datetime
 
 ############################################### 
 #### Coisas internas do API. ####
@@ -292,6 +293,15 @@ CREATE TABLE IF NOT EXISTS atendimento (
 
 );
 
+CREATE TABLE IF NOT EXISTS saida (
+    id_saida INTEGER PRIMARY KEY AUTOINCREMENT,
+    data DATETIME NOT NULL,
+    descricao VARCHAR(100) NOT NULL,
+    valor_total REAL NOT NULL,
+    observacao VARCHAR(100) NOT NULL
+    
+);
+
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (1, 'PIX');
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (2, 'Dinheiro');
 REPLACE INTO forma_pagamento (id_forma_pagamento, nome) VALUES (3, 'Débito');
@@ -454,6 +464,14 @@ def db_criar_comanda(id_cliente, numero_comanda, data_venda, id_operacao, id_sit
         return {'id_comanda':id_comanda, 'id_cliente':id_cliente, 'numero_comanda':numero_comanda, 'data_venda':data_venda, 'id_operacao':id_operacao, 'id_situacao':id_situacao, 'id_funcionario':id_funcionario}
 
 
+def db_criar_saida(data, descricao, valor, observacao):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("INSERT INTO saida (data, descricao, valor_total, observacao) VALUES (?, ?, ?, ?)", [data, descricao, valor, observacao])
+        id_saida = cur.lastrowid
+        con.commit()
+        return {'id_saida':id_saida, 'data':data, 'descricao':descricao, 'valor_total':valor, 'observacao':observacao}
+
+
 
 
 
@@ -492,7 +510,57 @@ def db_historico_cliente(nome_cliente):
     
 def db_historico_atendimento(nome):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE c.nome LIKE '%"+nome+"%' ORDER BY a.data DESC")
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE c.nome LIKE '%"+nome+"%' ORDER BY a.data ")
+        return rows_to_dict(cur.description, cur.fetchall())
+
+
+def db_trazer_historico_atendimento(nome):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE a.data = ?",[nome])
+        return rows_to_dict(cur.description, cur.fetchall())
+ 
+def db_listar_saida(data):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT * FROM saida WHERE data = ?",[data])
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+def db_listar_saida2():
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT * FROM saida")
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+def db_listar_saida_mes_ano(data_inicial, data_fim):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT SUM(valor_total) as tt FROM saida WHERE data BETWEEN ? and ?",[date(data_inicial[0],data_inicial[1],data_inicial[2]), date(data_fim[0], data_fim[1],data_fim[2])])
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+    
+def db_historico_entrada_saida(data_inicial, data_fim):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT SUM(a.valor_total) as tt FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE a.data BETWEEN ? and ?",[date(data_inicial[0],data_inicial[1],data_inicial[2]), date(data_fim[0], data_fim[1],data_fim[2])])
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+       
+    
+def db_historico_entrada(nome):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT SUM(a.valor_total) as tt FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE a.data = ?",[nome])
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+    
+def db_historico_saida(nome):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT SUM(valor_total) as tt FROM saida WHERE data = ?", [nome])
+        return rows_to_dict(cur.description, cur.fetchall())
+    
+    
+def cosultaEntrada(nome):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento WHERE a.data = ?",[nome])
         return rows_to_dict(cur.description, cur.fetchall())
 
 def ver_comanda_fechar(id_comanda):
@@ -511,6 +579,7 @@ def db_meu_agendamento(nome_cliente, data_agendamento):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
         cur.execute("SELECT c.nome AS nome_cliente, a.data1, a.hora, s.nome_servico, s.preco_servico, f.nome AS nome_funcionario, a.id_agendamento FROM cliente AS c INNER JOIN agendamento AS a ON c.id_cliente = a.id_cliente LEFT join servico as s ON a.id_servico = s.id_servico LEFT join funcionario as f on f.id_funcionario = a.id_funcionario where nome_cliente = ? AND a.data1 = ?",[nome_cliente, data_agendamento])
         return rows_to_dict(cur.description, cur.fetchall())
+    
 
 def db_meu_cliente(id_cliente, nome):
     with closing(conectar()) as con, closing(con.cursor()) as cur:
@@ -525,7 +594,7 @@ def db_listar_funcionarios():
     
 def db_listar_atendimento():
     with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento ORDER BY a.data DESC")
+        cur.execute("SELECT a.id_atendimento, a.data, c.nome, a.valor_unitario, a.descricao, a.desconto, a.valor_total, f.nome as forma_pagamento FROM atendimento as a INNER JOIN cliente as c ON a.id_cliente = c.id_cliente INNER JOIN forma_pagamento as f ON f.id_forma_pagamento = a.id_forma_pagamento ORDER BY a.data ASC")
         return rows_to_dict(cur.description, cur.fetchall())
  
  
@@ -642,14 +711,18 @@ def db_atualizar_comanda(id_situacao, numero_comanda):
         return {'id_situacao':id_situacao, 'numero_comanda':numero_comanda}
 
 
-def db_alterar_tabela():
-    with closing(conectar()) as con, closing(con.cursor()) as cur:
-        cur.execute("ALTER TABLE atendimento ADD COLUMN data DATETIME")
-        con.commit()
+# def db_alterar_saida():
+#     with closing(conectar()) as con, closing(con.cursor()) as cur:
+#         cur.execute("ALTER TABLE atendimento ADD COLUMN data DATETIME")
+#         con.commit()
          
-    
+def db_atualizar_saida(id_saida, data, descricao, valor_total, observacao):
+    with closing(conectar()) as con, closing(con.cursor()) as cur:
+        cur.execute("UPDATE saida SET data = ?, descricao = ?, valor_total = ?, observacao = ? WHERE id_saida = ?", [data, descricao, valor_total, observacao, id_saida])
+        id_saida = cur.lastrowid
+        con.commit()
+        return {id_saida:'id_saida',data:'data', descricao:'descricao', valor_total:'valor_total', observacao:'observacao'}  
  
-
 
 
 
